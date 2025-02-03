@@ -19,6 +19,10 @@
 #include "nvs_flash.h"
 #include "regex.h"
 
+#ifndef CONFIG_EXAMPLE_SCAN_LIST_SIZE
+#define CONFIG_EXAMPLE_SCAN_LIST_SIZE 10  // Valor predeterminado
+#endif
+
 #define DEFAULT_SCAN_LIST_SIZE CONFIG_EXAMPLE_SCAN_LIST_SIZE
 
 #ifdef CONFIG_EXAMPLE_USE_SCAN_CHANNEL_BITMAP
@@ -28,6 +32,10 @@ static uint8_t channel_list[CHANNEL_LIST_SIZE] = {1, 6, 11};
 #endif /*CONFIG_EXAMPLE_USE_SCAN_CHANNEL_BITMAP*/
 
 static const char *TAG = "scan";
+
+// Define el SSID y la contraseña de la red a la que deseas conectarte
+#define WIFI_SSID "Pacheco"
+#define WIFI_PASS "W8293323233S"
 
 static void print_auth_mode(int authmode)
 {
@@ -160,22 +168,10 @@ static void array_2_channel_bitmap(const uint8_t channel_list[], const uint8_t c
 /* Initialize Wi-Fi as sta and set scan method */
 static void wifi_scan(void)
 {
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
-    assert(sta_netif);
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
     uint16_t number = DEFAULT_SCAN_LIST_SIZE;
     wifi_ap_record_t ap_info[DEFAULT_SCAN_LIST_SIZE];
     uint16_t ap_count = 0;
     memset(ap_info, 0, sizeof(ap_info));
-
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_start());
 
 #ifdef USE_CHANNEL_BITMAP
     wifi_scan_config_t *scan_config = (wifi_scan_config_t *)calloc(1,sizeof(wifi_scan_config_t));
@@ -191,7 +187,6 @@ static void wifi_scan(void)
     esp_wifi_scan_start(NULL, true);
 #endif /*USE_CHANNEL_BITMAP*/
 
-    ESP_LOGI(TAG, "Max AP number ap_info can hold = %u", number);
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
     ESP_LOGI(TAG, "Total APs scanned = %u, actual AP number ap_info holds = %u", ap_count, number);
@@ -203,6 +198,20 @@ static void wifi_scan(void)
             print_cipher_type(ap_info[i].pairwise_cipher, ap_info[i].group_cipher);
         }
         ESP_LOGI(TAG, "Channel \t\t%d", ap_info[i].primary);
+
+        // Check if the scanned SSID matches the target SSID
+        if (strcmp((char *)ap_info[i].ssid, WIFI_SSID) == 0) {
+            ESP_LOGI(TAG, "Found target SSID: %s", WIFI_SSID);
+            wifi_config_t wifi_config = {
+                .sta = {
+                    .ssid = WIFI_SSID,
+                    .password = WIFI_PASS,
+                },
+            };
+            ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+            ESP_ERROR_CHECK(esp_wifi_connect());
+            break;
+        }
     }
 }
 
@@ -216,5 +225,20 @@ void app_main(void)
     }
     ESP_ERROR_CHECK( ret );
 
+    // Initialize the TCP/IP stack
+    ESP_ERROR_CHECK(esp_netif_init());
+
+    // Create the default event loop
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    // Initialize WiFi
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    // Set WiFi mode to STA (Station)
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    // Perform WiFi scan and connect to the target network
     wifi_scan();
 }
