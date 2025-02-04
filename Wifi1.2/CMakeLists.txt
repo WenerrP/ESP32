@@ -4,3 +4,4 @@ cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(Wifi1.2)
+include_directories("C:\Users\wener\Documents\ESP32\Wifi1.2\components\blynk-library-master\src")

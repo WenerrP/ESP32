@@ -10,6 +10,7 @@
 /*
     This example shows how to scan for available set of APs.
 */
+//#include <Arduino.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -18,6 +19,8 @@
 #include "esp_event.h"
 #include "nvs_flash.h"
 #include "regex.h"
+#include "driver/gpio.h"
+//#include "BlynkSimpleEsp32.h"
 
 #ifndef CONFIG_EXAMPLE_SCAN_LIST_SIZE
 #define CONFIG_EXAMPLE_SCAN_LIST_SIZE 10  // Valor predeterminado
@@ -36,6 +39,15 @@ static const char *TAG = "scan";
 // Define el SSID y la contraseña de la red a la que deseas conectarte
 #define WIFI_SSID "Pacheco"
 #define WIFI_PASS "W8293323233S"
+
+// Define el token de Blynk
+#define BLYNK_AUTH_TOKEN "W4_hBLfBerHmy_RxYvfkvL9F6Fkbdfrk"
+
+// Define el pin del LED
+#define LED_PIN GPIO_NUM_2
+
+// Blynk virtual pin
+#define VIRTUAL_PIN V1
 
 static void print_auth_mode(int authmode)
 {
@@ -164,6 +176,11 @@ static void array_2_channel_bitmap(const uint8_t channel_list[], const uint8_t c
 }
 #endif /*USE_CHANNEL_BITMAP*/
 
+/*BLYNK_WRITE(VIRTUAL_PIN)
+{
+    int pinValue = param.asInt();
+    gpio_set_level(LED_PIN, pinValue);
+}*/
 
 /* Initialize Wi-Fi as sta and set scan method */
 static void wifi_scan(void)
@@ -239,6 +256,22 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
 
+// Initialize Blynk
+/*
+// Blynk.begin(BLYNK_AUTH_TOKEN, WIFI_SSID, WIFI_PASS);
+
+// Configure the LED pin
+gpio_pad_select_gpio(LED_PIN);
+gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
+*/
     // Perform WiFi scan and connect to the target network
     wifi_scan();
+/*
+    Start Blynk
+while (true) {
+    Blynk.run();
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+}
+*/
+
 }
